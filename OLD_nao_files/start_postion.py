@@ -1,19 +1,21 @@
 # -*- encoding: UTF-8 -*-
+from naoqi import ALProxy
+
 from nao_class_wrapper import NaoRobot
 import time
 
-IP = "10.125.190.173"
+IP = "10.125.204.245"
 # IP = "localhost"
 dataFile = "my_data2"
 
 
-bobby = NaoRobot(IP, dataFile)
-bobby.FallManager(False)
-
-bobby.NewInitStart()
-# bobby.CameraFunction()
-# bobby.startAwareness()
-bobby.Rest()
+# bobby = NaoRobot(IP, dataFile)
+# bobby.FallManager(False)
+#
+# bobby.NewInitStart()
+# # bobby.CameraFunction()
+# # bobby.startAwareness()
+# bobby.Rest()
 
 # bobby.EpisodeRestart()
 
@@ -43,3 +45,10 @@ bobby.Rest()
 # bobby.Configuration()
 # bobby.CenterOfPresure()
 # bobby.ForceSensingResistorFeet()
+
+
+memory = ALProxy("ALMemory", IP, 9559)
+print(memory.getData("Device/SubDeviceList/LHand/Position/Actuator/Value"))
+print(memory.getData("Device/SubDeviceList/LHand/Position/Sensor/Value"))
+print(memory.getData("Device/SubDeviceList/LHand/ElectricCurrent/Sensor/Value"))
+print(memory.getData("Device/SubDeviceList/Head/Touch/Front/Sensor/Value"))
