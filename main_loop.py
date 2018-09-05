@@ -8,7 +8,7 @@ from naoqi import ALModule
 import nao_class
 
 
-IP = "10.125.204.245"
+IP = "10.125.204.213"
 dataFile = "bobby_data"
 
 NaoWrapper = None
@@ -29,9 +29,14 @@ def main(ip, port):
     global NaoWrapper
     NaoWrapper = nao_class.NaoWrapper("NaoWrapper")
 
+    # NaoWrapper.PostureStandInit(0.2)
+    # time.sleep(1)
+    # NaoWrapper.Rest()
+    
     joints = NaoWrapper.ReadJoints()
     print(NaoWrapper.body_parts)
-    print("command vald: %s\nSensor value: %s\nerror: %s"%(joints[0], joints[1], joints[2]))
+    print("command vald: %s\n\nSensor value: %s\n\nerror: %s\n"%(joints[0], joints[1], joints[2]))
+    NaoWrapper.ReadMemory()
 
 
     try:
