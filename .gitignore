@@ -1,2 +1,3 @@
 # ignore python files pyc
-*.pyc
+nao_class.pyc
+
