@@ -278,7 +278,7 @@ class NaoRobot(object):
         self.motionProxy.setStiffnesses(self.body_parts[0:5], stiffness)
         return
 
-    ''' Set Stiffness left Arm '''
+    ''' Set Stiffness right Arm '''
     def StiffRArm(self, stiffness):
         self.motionProxy.setStiffnesses(self.body_parts[8:13], 0.01)
         time.sleep(1)
