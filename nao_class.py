@@ -1,47 +1,42 @@
 import sys
 import time
+import math
+import random
 
+import csv
 import numpy as np
 from naoqi import ALProxy
-from naoqi import ALBroker
+# from naoqi import ALBroker
 from naoqi import ALModule
 
-class NaoWrapper(ALModule):
+class NaoWrapper(object):
     """
         LINKS:  http://doc.aldebaran.com/2-1/dev/naoqi/index.html#naoqi-process
                 http://doc.aldebaran.com/1-14/glossary.html#term-dcm
     """
-    def __init__(self, name):
-        ALModule.__init__(self, name)
-        # No need for IP and port here because
-        # we have our Python broker connected to NAOqi broker
-
-        # Create a proxy
+    def __init__(self, ip, path_csv):
         try:
             """ ALL PROXY """
-            self.motionProxy =  ALProxy("ALMotion")
-            self.postureProxy = ALProxy("ALRobotPosture")
+            self.motionProxy =  ALProxy("ALMotion", ip, 9559)
+            self.postureProxy = ALProxy("ALRobotPosture", ip, 9559)
             # self.awareness = ALProxy('ALBasicAwareness', ip, 9559)
-            self.leds =         ALProxy("ALLeds")
-            self.memory =       ALProxy("ALMemory")
-            self.camProxy =     ALProxy("ALVideoDevice")
-        except Exception,error:
-            print("Could not create proxy to ALMotion")
-            print("Error was: ",error)
+            self.leds =         ALProxy("ALLeds",ip,9559)
+            self.memory =       ALProxy("ALMemory", ip, 9559)
+            self.camProxy =     ALProxy("ALVideoDevice", ip, 9559)
+        except Exception,e:
+            print "Could not create proxy to ALMotion"
+            print "Error was: ",e
             sys.exit(1)
 
         """
             SUBSCRIBE TO EVENTS
             LINK: http://doc.aldebaran.com/2-1/naoqi-eventindex.html
         """
-        self.memory.subscribeToEvent(
-            "TouchChanged",
-            "NaoWrapper",
-            "onTouched")
 
         """
             VARIABLES
         """
+        self.path_csv = path_csv
         # MOTORS SPEED
         self.speed = 0.1
         # BODY PARTS
@@ -55,38 +50,7 @@ class NaoWrapper(ALModule):
                             + self.motionProxy.getLimits("Body")[20:26]
         self.joints_limits = [limit[:2] for limit in self.joints_limits]
 
-    """
-        -------------------SUBSCRIBE FUNCTIONS-----------------------------
-    """
-    def onTouched(self, key, value, message):
-        """ This will be called each time a touch
-        is detected.
-        """
-        # Unsubscribe to the event when talking,
-        # to avoid repetitions
-        self.memory.unsubscribeToEvent(
-            "TouchChanged",
-            "NaoWrapper",
-            )
-
-        # print("var1: %s\n var2: %s\n var3: %s"%(key, value, message ))
-        # DO ANY FEEDBACK
-        for val in value:
-            if val[0] == "Head/Touch/Front" and val[1] == False:
-                memory = self.ReadMemory()
-                print("Actuator: %s\nSensor: %s\nError: %s\nCurrent: %s\nTemperature: %s\nTemp status:%s\nStiffness: %s"
-                        %(memory[0], memory[1], memory[2], memory[3], memory[4], memory[5], memory[6]))
-            elif val[0] == "Head/Touch/Top" and val[1] == False:
-                self.StiffRArm(0)
-
-
-        # Subscribe again to the event
-        self.memory.subscribeToEvent(
-            "TouchChanged",
-            "NaoWrapper",
-            "onTouched")
-
-
+        return
 
     """
         -------------------POSTURES FUNCTIONS-----------------------------
@@ -114,10 +78,36 @@ class NaoWrapper(ALModule):
         self.motionProxy.rest()
         return
 
+    ''' Start Position for Domino play - Stretch knees '''
+    def NewInitStart(self):
+        #move arms down and stiffness 0
+        self.PostureStandZero(0.2)
+        self.motionProxy.setAngles("LKneePitch", -0.103083, 0.05)
+        self.motionProxy.setAngles("RKneePitch", -0.103083, 0.05)
+
+        self.motionProxy.setAngles("LShoulderPitch",    0.95, 0.05)
+        self.motionProxy.setAngles("RShoulderPitch",    0.95, 0.05)
+
+        self.motionProxy.setStiffnesses(["LArm", "RArm"], 0.2)
+        return
+
 
     """
         -------------------MAP FUNCTIONS-----------------------------
     """
+
+    """
+        Random number in interval
+    """
+    def RandFloat(self, high):
+        return random.random()*(high)
+
+
+    """
+        Truncate numbers
+    """
+    def Truncate(self,f, n):
+        return math.floor(f * 10 ** n) / 10 ** n
 
     """
         Map interval bounds to a different interval bound
@@ -167,32 +157,58 @@ class NaoWrapper(ALModule):
         Outputs 3 vectore in 0-1 format: command readings, sensed readings and error.
         LINK: http://doc.aldebaran.com/1-14/naoqi/motion/control-joint-api.html
     """
-    def ReadJoints(self):
-        # VALUES FROM ACTUATORS -> THE DESIRED POSITION
-        actuator = self.motionProxy.getAngles(self.body_parts, False)
-        # GET AVERAGE OF RIGHT AND LEFT HIP
-        actuator[6] =   (self.motionProxy.getAngles("LHipPitch", False)[0]  \
-                        + self.motionProxy.getAngles("RHipPitch", False)[0])/ 2
-        print("Len before: ", len(actuator))
-        actuator = np.around(self.ToAction(actuator), 5)
-        print("Len after: ", len(actuator))
-        # VALUES FROM SENSORS -> THE ACTUAL POSITION
-        sensor = self.motionProxy.getAngles(self.body_parts, True)
-        # GET AVERAGE OF RIGHT AND LEFT HIP
-        sensor[6] = (self.motionProxy.getAngles("LHipPitch", True)[0]   \
-                    + self.motionProxy.getAngles("RHipPitch", True)[0]) / 2
-        sensor = np.around(self.ToAction(sensor), 5)
-        # ERROR BETWEEN THE 2 VALUES
-        errors = np.around([(command - sensed) for command, sensed in zip(actuator, sensor)], 5)
+    def ReadMemoryJoints(self):
+        # JOINTS POSITION ACTUATORS
+        pos_act = []
+        # JOINTS POSITION SENSORS
+        pos_sens = []
+        for body_part in self.body_parts:
+            # JOINTS POSITION ACTUATORS
+            pos_act.append(
+                self.memory.getData("Device/SubDeviceList/%s/Position/Actuator/Value"%body_part))
+            # JOINTS POSITION SENSORS
+            pos_sens.append(
+                self.memory.getData("Device/SubDeviceList/%s/Position/Sensor/Value"%body_part))
+            # RADIANS TO ACTION
+        pos_act[6] = (pos_act[6] + self.memory.getData("Device/SubDeviceList/"\
+                                    "RHipPitch/Position/Sensor/Value")) / 2
+        pos_act = np.around(self.ToAction(pos_act), 5)
+        pos_sens = np.around(self.ToAction(pos_sens), 5)
 
-        return actuator, sensor, errors
+        return pos_act, pos_sens
 
 
     """
         Read Memory values
         LINK: http://doc.aldebaran.com/2-1/family/nao_dcm/actuator_sensor_names.html#lhippitch
     """
-    def ReadMemory(self):
+    def PrintNaoData(self):
+        print(  "\n0: means regular temperature\n"  \
+                "1: means temperature has reach the max limit, start reducing stiffness.\n"   \
+                "2: means the joint is very hot, stiffness reduced over 30%.\n"               \
+                "3: means the joint is critically hot, stiffness value is set to 0\n")
+
+        print("CPU: %sC"%self.memory.getData("Device/SubDeviceList/Head/Temperature/Sensor/Value"))
+        print("Battery: %2.2fA %2.2fcharge %2.2fC"%(self.memory.getData("Device/SubDeviceList/Battery/Current/Sensor/Value"),
+                                        self.memory.getData("Device/SubDeviceList/Battery/Charge/Sensor/Value"),
+                                        self.memory.getData("Device/SubDeviceList/Battery/Temperature/Sensor/Value")))
+        for i, body_part in enumerate(self.body_parts):
+            actuator = self.memory.getData("Device/SubDeviceList/%s/Position/Actuator/Value"%body_part)
+            actuator = round(self.Map(actuator, self.joints_limits[i][0],    self.joints_limits[i][1], 0, 1),4)
+            print("ACT: %s"%actuator),
+            sensor = self.memory.getData("Device/SubDeviceList/%s/Position/Sensor/Value"%body_part)
+            sensor = round(self.Map(sensor, self.joints_limits[i][0],    self.joints_limits[i][1], 0, 1),4)
+            print("\tSEN: %s"%sensor),
+            print("\tCUR: %2.4fA"%self.memory.getData("Device/SubDeviceList/%s/ElectricCurrent/Sensor/Value"%body_part)),
+            print("\tTEM: %2.4fC"%self.memory.getData("Device/SubDeviceList/%s/Temperature/Sensor/Value"%body_part)),
+            print("\tTEM: %2.4flvl"%self.memory.getData("Device/SubDeviceList/%s/Temperature/Sensor/Status"%body_part)),
+            print("\tSTI: %2.4f"%self.memory.getData("Device/SubDeviceList/%s/Hardness/Actuator/Value"%body_part)),
+            print("\t%s"%body_part)
+        return
+
+
+
+    def ReadMemory(self, body_parts):
         # JOINTS POSITION ACTUATORS
         pos_act = []
         # JOINTS POSITION SENSORS
@@ -205,7 +221,7 @@ class NaoWrapper(ALModule):
         temp_sts = []
         # JOINTS STIFFNESS
         stif_val = []
-        for body_part in self.body_parts:
+        for body_part in body_parts:
             # JOINTS POSITION ACTUATORS
             pos_act.append(
                 self.memory.getData("Device/SubDeviceList/%s/Position/Actuator/Value"%body_part))
@@ -232,6 +248,14 @@ class NaoWrapper(ALModule):
 
         return pos_act, pos_sens, errors, current, temp_val, temp_sts, stif_val
 
+    def ReadTopHead(self):
+        return self.memory.getData("Device/SubDeviceList/Head/Touch/Middle/Sensor/Value")
+    def ReadFrontHead(self):
+        return self.memory.getData("Device/SubDeviceList/Head/Touch/Front/Sensor/Value")
+    def ReadRearHead(self):
+        return self.memory.getData("Device/SubDeviceList/Head/Touch/Rear/Sensor/Value")
+
+
     """
         -------------------MOVE FUNCTIONS-----------------------------
     """
@@ -241,36 +265,33 @@ class NaoWrapper(ALModule):
         LINK: http://doc.aldebaran.com/1-14/naoqi/motion/control-joint.html
     """
     def Move(self, action_vector):
-        rad_vector = action_vector
         # READ VALUES JOINTS
-        pos_act, pos_sens, _, _, _, _, _ = self.ReadMemory()
+        pos_act, pos_sens = self.ReadMemoryJoints()
         # GET RADIANS TO COMMAND
-        # rad_vector, pos_sens = list(self.ToRadians(action_vector)), list(self.ToRadians(pos_sens))
+        rad_vector, pos_sens = list(self.ToRadians(action_vector)), list(self.ToRadians(pos_sens))
         rad_vector, pos_sens = np.around(rad_vector, 4), np.around(pos_sens, 4)
 
         to_move =    [i for i, (sen,act) in enumerate(zip(pos_sens, rad_vector)) \
-                        if round(sen,2) != round(act,2)]
+                        if self.Truncate(sen,2) != self.Truncate(act,2)]
+
         if to_move:
             # WE HAVE THINGS TO MOVE
             parts_move = [self.body_parts[move] for move in to_move]
-            print("Parts to move: ",parts_move)
+            print("Moving: %s"%(parts_move))
             rad_move = [round(rad_vector[move],3) for move in to_move]
             # SET STIFFNESS
             [self.motionProxy.setStiffnesses(body_part, 1.0) for body_part in parts_move]
             # NON-BLOCKING CALL:
             # task is created in a parallel thread. This enables you to do other work at the same time
             # LINK: http://doc.aldebaran.com/1-14/dev/naoqi/index.html
-            # self.motionProxy.setAngles(parts_move, rad_move, self.speed)
-            self.motionProxy.angleInterpolationWithSpeed(parts_move, rad_move, self.speed)
-            # print(rad_vector, action_vector, pos_sens)
-            # print(parts_move, rad_move)
-
+            self.motionProxy.setAngles(parts_move, rad_move, self.speed)
+            # TRUE IF THERE IS MOVEMENT
             return True
 
         else:
             # NOTHING TO MOVE
             print("No move!")
-
+            # FALSE IF THERE IS NO MOVEMENT
             return False
 
     """
@@ -280,6 +301,198 @@ class NaoWrapper(ALModule):
         self.motionProxy.setStiffnesses(self.body_parts[8:13], stiffness)
         print("Stiffness RArm set to ",stiffness)
         return
+
+    """
+        ---------------------SNAP DATA FUNCTION-------------------------START
+    """
+    def ToCsv(self):
+        # read sense
+        joints_val = self.ReadMemoryJoints()[1]
+        with open(self.path_csv, "a+b") as f:
+            writer = csv.writer(f)
+            writer.writerows([joints_val[:6]])
+        return
+
+
+    """
+        ---------------------MENU CONTORL FUNCTION-------------------------START
+    """
+    def Control(self):
+        status = sum(self.Fsr())
+        #initialize list of actions vectors
+        actions = []
+        #get aciton vector
+        action_vector = self.ReadMemoryJoints()[1]
+        print("Menu ",action_vector)
+        #starting joint
+        joint = 0
+        #initialize input
+        increment = action_vector[joint]
+        #initialize message
+        joints = ['LShoulderPitch', 'LShoulderRoll', 'LElbowYaw', 'LElbowRoll', 'LWristYaw', 'LHand', 'Hips', 'RShoulderPitch', 'RShoulderRoll', 'RElbowYaw', 'RElbowRoll', 'RWristYaw', 'RHand']
+        info = "\n-----> Type r to show current action_vector.\
+        \n-----> Type d to dump temp vector to pickle.\
+        \n-----> Type a adjust movement. \
+        \n-----> Type e execute temp action list. \
+        \n-----> Type s save to temp vector. \
+        \n-----> Type r rest selected joint and erase temp vector. \
+        \n-----> Type p to print joint readings. \
+        \n-----> Type snap to show images. \
+        \n-----> Current joint: %s\n-----> Type j[joint #] to change joint \
+        \n-----> Type i for info. \
+        \n-----> Press Enter to exit!\n"%joints[joint]
+        print info
+
+        while True:
+            n_status = sum(self.Fsr())
+            variance = abs(status - n_status)
+
+            if variance > 0.3:
+                print("Table Touched at diff 0.3")
+            elif variance < 0.1:
+                status = n_status
+
+
+
+            user_input = raw_input('\nMove %s: '%(joints[joint]))
+            if str(user_input) == '+':
+                if (increment + 0.1) < 1:
+                    increment += 0.1
+                else:
+                    increment = 1
+                print increment
+
+            elif str(user_input) == '-':
+                if (increment - 0.1) > 0:
+                    increment -= 0.1
+                else:
+                    increment = 0
+                print increment
+
+            elif 'j' in str(user_input):
+                print str(user_input)[1:]
+                if (len(str(user_input)) == 1):
+                    print "Invalid joint. Selecte form 0 to 12!"
+                    continue
+                elif (len(str(user_input)) > 3) or (int(str(user_input)[1:]) > 12 ):
+                    print "Invalid joint. Selecte form 0 to 12!"
+                    continue
+                else:
+                    joint = int(str(user_input)[1:])
+                    increment = action_vector[joint]
+                    print "Sensed Value: ",self.ReadMemoryJoints()[1][joint]
+                    print "Joint %s selected!"%(joints[joint])
+
+            elif str(user_input) == 'p':
+                actuator = self.ReadMemoryJoints()[0]
+                sensor = self.ReadMemoryJoints()[1]
+                errors = np.around([abs(command - sensed) for command, sensed in zip(actuator, sensor)], 3)
+                for body_part, act, sen, err in zip(self.body_parts, actuator, sensor, errors):
+                    print("{:>15s}\tACT: {:>4.4f}\tSEN: {:>2.4f}\tERR: {:>2.4f}".format(body_part, act, sen, err))
+
+            elif str(user_input) == 'd':
+                # DUMP ACTION VECTOR TO CSV
+                self.ToCsv()
+                print "Action dumped to %s"%self.path_csv
+
+            elif str(user_input) == 'a':
+                    record = self.ReadMemoryJoints()[0]
+                    print record
+                    self.motionProxy.setStiffnesses(self.body_parts[6:14], 0)
+                    print "-------------------> Start moving arm! 6 seconds <-----------"
+                    for i in range(6):
+                        if i <= 3:
+                            time.sleep(1)
+                            print "-----> SECONDS: ",i+1
+                        else:
+                            time.sleep(1)
+                            print "-----!!!!!!!!!!!!!!!!!----> SECONDS: ",i+1
+                    increment = self.ReadMemoryJoints()[1][joint]
+
+            elif str(user_input) == 's':
+                #save to action list
+                reading = self.ReadMemoryJoints()[1]
+                print "Temporary action added: ",reading
+                actions.append(reading)
+
+            elif str(user_input) == 'e':
+                counter = 0
+                for action in actions:
+                    print "\nTemp Action %s\n%s" %(counter,action)
+                    self.Move(action, True)
+                    counter += 1
+
+            elif str(user_input) == 'r':
+                #rest arm
+                self.PrintNaoData()
+                continue
+
+            elif str(user_input) == 'i':
+                print(self.ReadMemoryJoints()[1])
+                continue
+
+            elif str(user_input) == 'snap':
+                top_image = self.SnapPicture(camera_code=0, resoution=2, color_space=11)
+                bottom_image = self.SnapPicture(camera_code=1, resoution=2, color_space=11)
+                continue
+
+            elif str(user_input) == "q":
+                print "\nCommand closed!"
+                break
+
+            else:
+                try:
+                    float(user_input)
+                    increment = float(user_input)
+                    print increment
+                except ValueError:
+                    print "\nTry again!"
+                    continue
+                # continue
+            #update reading before sending command
+            action_vector = self.ReadMemoryJoints()[1]
+            action_vector[joint] = increment
+            self.Move(action_vector)
+
+        return
+
+
+    """
+    ---------------------BALANCE FUNCTION-------------------------
+    """
+    def CopLF(self):
+        return round(self.memory.getData("Device/SubDeviceList/LFoot/FSR/CenterOfPressure/X/Sensor/Value"),2),\
+               round(self.memory.getData("Device/SubDeviceList/RFoot/FSR/CenterOfPressure/X/Sensor/Value"),2)
+
+    def Fsr(self):
+        return round(self.memory.getData("Device/SubDeviceList/LFoot/FSR/FrontLeft/Sensor/Value"),2),\
+               round(self.memory.getData("Device/SubDeviceList/LFoot/FSR/FrontRight/Sensor/Value"),2),\
+               round(self.memory.getData("Device/SubDeviceList/RFoot/FSR/FrontLeft/Sensor/Value"),2),\
+               round(self.memory.getData("Device/SubDeviceList/RFoot/FSR/FrontRight/Sensor/Value"),2)
+
+    def ActionSim(self, target, predicted):
+        error = np.around([abs(command - sensed) for command, sensed in zip(target, predicted)], 2)
+        if (error[0] > 0.05) or (error[1] > 0.05):
+            return -1
+        elif (error[2] > 0.1) or (error[3] > 0.1):
+            return -1
+        elif (error[4] > 0.15) or (error[5] > 0.15):
+            return -1
+        else:
+            return 1
+
+    def SimMov(self, action):
+        action[0] += random.choice([self.RandFloat(0.05), - self.RandFloat(0.05)])
+        action[1] += random.choice([self.RandFloat(0.05), - self.RandFloat(0.05)])
+        action[2] += random.choice([self.RandFloat(0.1), - self.RandFloat(0.1)])
+        action[3] += random.choice([self.RandFloat(0.1), - self.RandFloat(0.1)])
+        action[4] += random.choice([self.RandFloat(0.15), - self.RandFloat(0.15)])
+        action[5] += random.choice([self.RandFloat(0.15), - self.RandFloat(0.15)])
+        action = [0 if a <0 else a for a in action]
+        return action
+
+
+
 
 if __name__ == "nao_class":
     print("\n-------Thank you for using my library!------- by George M.\n")

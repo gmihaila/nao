@@ -45,6 +45,7 @@ dataFile = "my_data2"
 # bobby.Configuration()
 # bobby.CenterOfPresure()
 # bobby.ForceSensingResistorFeet()
+moto =  ALProxy("ALMotion", IP, 9559)
 memory = ALProxy("ALMemory", IP, 9559)
 
 head_front = memory.getData("Device/SubDeviceList/Head/Touch/Front/Sensor/Value")
