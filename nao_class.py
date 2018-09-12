@@ -482,14 +482,16 @@ class NaoWrapper(object):
             return 1
 
     def SimMov(self, action):
-        action[0] += random.choice([self.RandFloat(0.05), - self.RandFloat(0.05)])
-        action[1] += random.choice([self.RandFloat(0.05), - self.RandFloat(0.05)])
-        action[2] += random.choice([self.RandFloat(0.1), - self.RandFloat(0.1)])
-        action[3] += random.choice([self.RandFloat(0.1), - self.RandFloat(0.1)])
-        action[4] += random.choice([self.RandFloat(0.15), - self.RandFloat(0.15)])
-        action[5] += random.choice([self.RandFloat(0.15), - self.RandFloat(0.15)])
-        action = [0 if a <0 else a for a in action]
-        return action
+        # MAKE A COPY TO AVOID VARIABLE CHANGING
+        new_action = action[:]
+        new_action[0] += random.choice([self.RandFloat(0.05), - self.RandFloat(0.05)])
+        new_action[1] += random.choice([self.RandFloat(0.05), - self.RandFloat(0.05)])
+        new_action[2] += random.choice([self.RandFloat(0.1), - self.RandFloat(0.1)])
+        new_action[3] += random.choice([self.RandFloat(0.1), - self.RandFloat(0.1)])
+        new_action[4] += random.choice([self.RandFloat(0.15), - self.RandFloat(0.15)])
+        new_action[5] += random.choice([self.RandFloat(0.15), - self.RandFloat(0.15)])
+        new_action = [0 if a <0 else a for a in new_action]
+        return new_action
 
 
 

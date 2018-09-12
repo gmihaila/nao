@@ -24,7 +24,6 @@ def main(ip, port):
 
     target = [0.63642,0.28029,0.31465,0.79656,0.52901,0.0148,0.40954,0.83282,0.7234,0.6835,0.65057,0.46929,0.0148]
 
-
     # print(target, n_target)
     # NaoWrapper.PostureStandInit(0.2)
     # time.sleep(1)
@@ -87,9 +86,14 @@ def main(ip, port):
             # PREDICT ACTIONS - CALL MODEL
             n_target = my_nao.SimMov(target)
             # CHECK IF ACITON IS SIMILAR
-            target = n_target
+            # target = n_target
             # EXECUTE PREDICTED ACTION
+            print("Target")
+            my_nao.Move(target)
+            time.sleep(3)
+            print("Similar")
             my_nao.Move(n_target)
+            time.sleep(3)
 
             print(my_nao.ActionSim(target, n_target))
 
