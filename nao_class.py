@@ -5,6 +5,7 @@ import random
 
 import csv
 import numpy as np
+from PIL import Image
 from naoqi import ALProxy
 # from naoqi import ALBroker
 from naoqi import ALModule
@@ -82,13 +83,15 @@ class NaoWrapper(object):
     def NewInitStart(self):
         #move arms down and stiffness 0
         self.PostureStandZero(0.2)
+        # self.motionProxy.setAngles("LHipPitch", -0.3, 0.05)
+        # self.motionProxy.setAngles("RHipPitch", -0.3, 0.05)
+
         self.motionProxy.setAngles("LKneePitch", -0.103083, 0.05)
         self.motionProxy.setAngles("RKneePitch", -0.103083, 0.05)
 
-        self.motionProxy.setAngles("LShoulderPitch",    0.95, 0.05)
-        self.motionProxy.setAngles("RShoulderPitch",    0.95, 0.05)
-
-        self.motionProxy.setStiffnesses(["LArm", "RArm"], 0.2)
+        self.motionProxy.setAngles("LShoulderPitch",  0.3, 0.05)
+        self.motionProxy.setAngles("RShoulderPitch",  0.3, 0.05)
+        self.motionProxy.setStiffnesses(["RArm"], 0.1)
         return
 
 
@@ -148,6 +151,18 @@ class NaoWrapper(object):
             for i in range(0, 13):
                 action_vector[i] = self.Map(input_radians[i], self.joints_limits[i][0],    self.joints_limits[i][1], 0, 1)
         return action_vector
+
+    '''
+    START-----------------------FALL MANAGER---------------------------------START
+    '''
+    #deactivate/activate fall manager
+    def FallManager(self, activ):
+        self.motionProxy.setFallManagerEnabled(activ)
+        return
+    '''
+    END-------------------------FALL MANAGER-----------------------------------END
+    '''
+
 
     """
         -------------------READ FUNCTIONS-----------------------------
@@ -279,6 +294,9 @@ class NaoWrapper(object):
             parts_move = [self.body_parts[move] for move in to_move]
             print("Moving: %s"%(parts_move))
             rad_move = [round(rad_vector[move],3) for move in to_move]
+            if 6 in to_move:
+                parts_move.append("RHipPitch")
+                rad_move.append(rad_move[to_move.index(6)])
             # SET STIFFNESS
             [self.motionProxy.setStiffnesses(body_part, 1.0) for body_part in parts_move]
             # NON-BLOCKING CALL:
@@ -344,16 +362,6 @@ class NaoWrapper(object):
         print info
 
         while True:
-            n_status = sum(self.Fsr())
-            variance = abs(status - n_status)
-
-            if variance > 0.3:
-                print("Table Touched at diff 0.3")
-            elif variance < 0.1:
-                status = n_status
-
-
-
             user_input = raw_input('\nMove %s: '%(joints[joint]))
             if str(user_input) == '+':
                 if (increment + 0.1) < 1:
@@ -398,7 +406,7 @@ class NaoWrapper(object):
             elif str(user_input) == 'a':
                     record = self.ReadMemoryJoints()[0]
                     print record
-                    self.motionProxy.setStiffnesses(self.body_parts[6:14], 0)
+                    self.motionProxy.setStiffnesses(self.body_parts[0:5], 0)
                     print "-------------------> Start moving arm! 6 seconds <-----------"
                     for i in range(6):
                         if i <= 3:
@@ -472,7 +480,7 @@ class NaoWrapper(object):
 
     def ActionSim(self, target, predicted):
         error = np.around([abs(command - sensed) for command, sensed in zip(target, predicted)], 2)
-        if (error[0] > 0.05) or (error[1] > 0.05):
+        if (error[0] > 0.02) or (error[1] > 0.02):
             return -1
         elif (error[2] > 0.1) or (error[3] > 0.1):
             return -1
@@ -492,6 +500,59 @@ class NaoWrapper(object):
         new_action[5] += random.choice([self.RandFloat(0.15), - self.RandFloat(0.15)])
         new_action = [0 if a <0 else a for a in new_action]
         return new_action
+
+
+    '''
+    START----------------------CAMERA FUNCTION-------------------------------START
+        LINK:   http://doc.aldebaran.com/2-1/family/robots/video_robot.html
+                http://doc.aldebaran.com/1-14/dev/python/examples/vision/get_image.html
+    '''
+
+    def SnapPicture(self, camera_code, resoution, color_space):
+
+        self.camProxy.setActiveCamera("ALVideoDevice",camera_code)
+
+        client = self.camProxy.subscribeCamera("python_client",camera_code, resoution, color_space, 5)
+        raw_image = self.camProxy.getImageRemote(client)
+        self.camProxy.unsubscribe(client)
+        # self.camProxy.releaseImage(client)
+        image_width = raw_image[0]
+        image_height = raw_image[1]
+        image_array = raw_image[6]
+
+        image = Image.frombytes("RGB", (image_width, image_height), image_array)
+
+        # image.show()
+        image = np.array(image)
+
+        return image
+
+    def CameraFunction(self):
+        """
+            Resolution size:
+                0 (120x160)
+                1 (320x240)     QVGA
+                2 (640x480)     VGA
+                3 (1280x960)    4VGA
+                4 (320x240)
+                5 (1280x720)
+                6 (320x240)
+                7 (60x80)
+                8 (30x40)
+        """
+        resolution = 13    # VGA
+        color_space = 11   # RGB
+
+        top_image = self.SnapPicture(camera_code=0, resoution=resolution, color_space=color_space)
+
+        bottom_image = self.SnapPicture(camera_code=1, resoution=resolution, color_space=color_space)
+
+
+        return top_image, bottom_image
+
+    '''
+    END------------------------CAMERA FUNCTION--------------------------------END
+    '''
 
 
 
