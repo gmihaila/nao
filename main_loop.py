@@ -9,7 +9,7 @@ from naoqi import ALModule
 from nao_class import NaoWrapper
 
 
-IP = "10.125.193.249"
+IP = "10.125.198.69"
 dataFile = "bobby_data"
 
 # NaoWrapper = None
@@ -33,15 +33,16 @@ def main(ip, port):
     # target = [0.63642,0.28029,0.31465,0.79656,0.52901,0.0148,0.76193,0.72985,0.801,0.50551,0.00637,0.48948,0.0148]
 
     # print(target, n_target)
-    # NaoWrapper.PostureStandInit(0.2)
+    my_nao.PostureStandInit(0.2)
     # time.sleep(1)
-    # my_nao.Rest()
+    my_nao.Rest()
+
 
     # joints = my_nao.ReadMemoryJoints()[1]
     # joints[0] -= 0.1
     # my_nao.speed = 0.3
 
-    # my_nao.Control()
+    my_nao.Control()
     # my_nao.PostureStand(0.1)
 
     # GET STATUS OF SENSORS
@@ -52,12 +53,12 @@ def main(ip, port):
 
     lffl, lffr, rffl, rffr = my_nao.Fsr()
     tcam, bcam = my_nao.CameraFunction()
-    print(tcam.shape)
-    print(bcam.shape)
-    image = Image.fromarray(tcam)
-    image.show()
-    image = Image.fromarray(bcam)
-    image.show()
+    # print(tcam.shape)
+    # print(bcam.shape)
+    # image = Image.fromarray(tcam)
+    # image.show()
+    # image = Image.fromarray(bcam)
+    # image.show()
 
     try:
         """
@@ -66,13 +67,13 @@ def main(ip, port):
         while True:
 
             """GET PREDICTION FROM MODEL"""
-            action = None
+            action = target
 
             """CHECK SIMILARITY"""
             # sim = my_nao.ActionSim()
 
             """ EXECUTE ACTION """
-            my_nao.Move(action)
+            # my_nao.Move(action)
 
             """GET IMAGES"""
             tcam, bcam = my_nao.CameraFunction()
