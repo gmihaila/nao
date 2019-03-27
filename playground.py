@@ -10,13 +10,9 @@ from nao_class import NaoWrapper
 
 
 IP = "10.125.198.69"
-dataFile = "bobby_data"
+data = "nao_data.csv"
 
-# NaoWrapper = None
+my_nao = NaoWrapper(IP, data)
 
-def main(ip, port):
-    """ Main entry point
-    """
-    my_nao = NaoWrapper(ip, "nao_data.csv")
-    my_nao.FallManager(False)
+my_nao.FallManager(False)
 
