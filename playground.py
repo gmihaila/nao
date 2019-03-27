@@ -12,7 +12,10 @@ from nao_class import NaoWrapper
 IP = "10.125.198.69"
 data = "nao_data.csv"
 
+# create nao object
 my_nao = NaoWrapper(IP, data)
 
+# deactivate fall manager
 my_nao.FallManager(False)
+
 
