@@ -9,7 +9,7 @@ from naoqi import ALModule
 from nao_class import NaoWrapper
 
 
-IP = "10.125.198.69"
+IP = "10.125.200.124"
 data = "nao_data.csv"
 
 # create nao object
@@ -18,4 +18,15 @@ my_nao = NaoWrapper(IP, data)
 # deactivate fall manager
 my_nao.FallManager(False)
 
+
+
+my_nao.PostureStandInit(0.2)
+
+my_nao.Control()
+
+
+time.sleep(3)
+
+
+my_nao.Rest()
 
