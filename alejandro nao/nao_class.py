@@ -327,11 +327,35 @@ class NaoWrapper(object):
         # read sense
 	body_joints=self.motionProxy.getBodyNames("Body")
 	body_joints= body_joints[0:14]+body_joints[15:]
+      	joints_limits_csv = self.motionProxy.getLimits("Body")[0:14]+self.motionProxy.getLimits("Body")[15:]
 	pos_act = []
+	body_info=[[] for i in range(25)]
         # JOINTS POSITION SENSORS
         pos_sens = []
 	joints_val=[]
-        for body_part in body_joints:
+	i=0;
+	for body_part in body_joints:
+		body_info[i].append(self.memory.getData("Device/SubDeviceList/%s/Position/Actuator/Value"%body_part))
+		body_info[i].append(self.memory.getData("Device/SubDeviceList/%s/Position/Sensor/Value"%body_part))
+		body_info[i].append(self.memory.getData("Device/SubDeviceList/%s/ElectricCurrent/Sensor/Value"%body_part))
+ 		body_info[i].append(self.memory.getData("Device/SubDeviceList/%s/Temperature/Sensor/Value"%body_part))
+		body_info[i].append(self.memory.getData("Device/SubDeviceList/%s/Hardness/Actuator/Value"%body_part))
+ 		body_info[i].append(self.memory.getData("Device/SubDeviceList/%s/Temperature/Sensor/Status"%body_part))
+		body_info[i].append(body_info[i][0]-body_info[i][1])
+		i=i+1
+        for i in range(0,len(body_info)):
+		for j in range(0,len(body_info[i])-1):
+			body_info[i][j] = self.Map(body_info[i][j], joints_limits_csv[i][0],joints_limits_csv[i][1], 0, 1)
+	body_info=np.around(body_info, 2)
+	for i in range(0,len(body_info)):
+		print(body_info[i])
+	body_info2=list(body_info)	
+	body_info2.append(tocsv)    
+	with open(self.path_csv, "a+b") as f:
+       	    	writer = csv.writer(f)
+            	writer.writerows([body_info2])
+        return
+	"""  for body_part in body_joints:
             # JOINTS POSITION ACTUATORS
             pos_act.append(
 		self.memory.getData("Device/SubDeviceList/%s/Position/Actuator/Value"%body_part))
@@ -345,7 +369,6 @@ class NaoWrapper(object):
        # pos_sens = np.around(self.ToAction(pos_sens), 5)
         action_vector1 = np.zeros(len(pos_act)).astype(float)
  	action_vector2 = np.zeros(len(pos_act)).astype(float)
-      	joints_limits_csv = self.motionProxy.getLimits("Body")[0:14]+self.motionProxy.getLimits("Body")[15:]
         for i in range(0, len(pos_act)):
                 action_vector1[i] = self.Map(pos_act[i], joints_limits_csv[i][0],    joints_limits_csv[i][1], 0, 1)
 		action_vector2[i] = self.Map(pos_sens[i], joints_limits_csv[i][0],    joints_limits_csv[i][1], 0, 1)
@@ -356,7 +379,7 @@ class NaoWrapper(object):
         with open(self.path_csv, "a+b") as f:
             writer = csv.writer(f)
             writer.writerows([joints_val])
-        return
+        return"""
 
 
     """
@@ -427,11 +450,7 @@ class NaoWrapper(object):
 
             elif str(user_input[0]) == 'd':
                 # DUMP ACTION VECTOR TO CSV
-		print(user_input)
 		tocsv=user_input[1:]
-		print(tocsv)
-		print(tocsv)
-		print(tocsv)
                 self.ToCsv(tocsv)
                 print "Action dumped to %s"%self.path_csv
 
