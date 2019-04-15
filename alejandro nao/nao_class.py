@@ -44,7 +44,7 @@ class NaoWrapper(object):
 	print(self.body_parts)
 	# AVOID RIGHT HIP self.body_parts[16] -> COMMAND BOTH THE SAME
         self.body_parts =   self.body_parts[2:8] + [self.body_parts[10]] + self.body_parts[20:26]
-	print(self.body_parts)
+	#print(self.body_parts)
         # JOINTS LIMITS
         self.joints_limits = self.motionProxy.getLimits("Body")[2:8]    \
                             + [self.motionProxy.getLimits("Body")[10]]  \
@@ -321,19 +321,16 @@ class NaoWrapper(object):
         return
 
     """
-        ---------------------SNAP DATA FUNCTION-------------------------START
+        ---------------------SNAP DATA FUNCTION-------------------------STARTiNRETIAL_gYROSCOPE
     """
     def ToCsv(self,tocsv):
-        # read sense
+        
 	body_joints=self.motionProxy.getBodyNames("Body")
 	body_joints= body_joints[0:14]+body_joints[15:]
       	joints_limits_csv = self.motionProxy.getLimits("Body")[0:14]+self.motionProxy.getLimits("Body")[15:]
-	pos_act = []
-	body_info=[[] for i in range(25)]
-        # JOINTS POSITION SENSORS
-        pos_sens = []
-	joints_val=[]
+	body_info=[[] for i in range(30)]
 	i=0;
+	#JOINTS DATA
 	for body_part in body_joints:
 		body_info[i].append(self.memory.getData("Device/SubDeviceList/%s/Position/Actuator/Value"%body_part))
 		body_info[i].append(self.memory.getData("Device/SubDeviceList/%s/Position/Sensor/Value"%body_part))
@@ -342,11 +339,26 @@ class NaoWrapper(object):
 		body_info[i].append(self.memory.getData("Device/SubDeviceList/%s/Hardness/Actuator/Value"%body_part))
  		body_info[i].append(self.memory.getData("Device/SubDeviceList/%s/Temperature/Sensor/Status"%body_part))
 		body_info[i].append(body_info[i][0]-body_info[i][1])
-		i=i+1
-        for i in range(0,len(body_info)):
+		i+=1
+	#CPU DATA		
+	body_info[i].append(self.memory.getData("Device/SubDeviceList/Head/Temperature/Sensor/Value"))		
+	i+=1	
+	#BATTERY DATA
+	Battery=["Current","Charge","Temperature"]
+	for battery_value in Battery:
+		body_info[i].append(self.memory.getData("Device/SubDeviceList/Battery/%s/Sensor/Value"%battery_value))
+	i+=1	
+	#INERTIAL DATA
+	inertial=["Gyroscope","Angle","Accelerometer"]
+	for j in range(0,len(inertial)):
+		body_info[i].append(self.memory.getData("Device/SubDeviceList/InertialSensor/%sX/Sensor/Value"%inertial[j]))
+		body_info[i].append(self.memory.getData("Device/SubDeviceList/InertialSensor/%sY/Sensor/Value"%inertial[j]))
+		body_info[i].append(self.memory.getData("Device/SubDeviceList/InertialSensor/%sZ/Sensor/Value"%inertial[j]))
+		i+=1	
+	for i in range(0,len(body_info)-5):
 		for j in range(0,len(body_info[i])-1):
 			body_info[i][j] = self.Map(body_info[i][j], joints_limits_csv[i][0],joints_limits_csv[i][1], 0, 1)
-	body_info=np.around(body_info, 2)
+	body_info[0:25]=np.around(body_info[0:25], 2)
 	for i in range(0,len(body_info)):
 		print(body_info[i])
 	body_info2=list(body_info)	
@@ -354,33 +366,8 @@ class NaoWrapper(object):
 	with open(self.path_csv, "a+b") as f:
        	    	writer = csv.writer(f)
             	writer.writerows([body_info2])
+	f.close()
         return
-	"""  for body_part in body_joints:
-            # JOINTS POSITION ACTUATORS
-            pos_act.append(
-		self.memory.getData("Device/SubDeviceList/%s/Position/Actuator/Value"%body_part))
-            # JOINTS POSITION SENSORS
-            pos_sens.append(
-            	self.memory.getData("Device/SubDeviceList/%s/Position/Sensor/Value"%body_part))
-            # RADIANS TO ACTION
-	#pos_act[6] = (pos_act[6] + self.memory.getData("Device/SubDeviceList/"\
-        #                            "RHipPitch/Position/Sensor/Value")) / 2
-       # pos_act = np.around(self.ToAction(pos_act), 5)
-       # pos_sens = np.around(self.ToAction(pos_sens), 5)
-        action_vector1 = np.zeros(len(pos_act)).astype(float)
- 	action_vector2 = np.zeros(len(pos_act)).astype(float)
-        for i in range(0, len(pos_act)):
-                action_vector1[i] = self.Map(pos_act[i], joints_limits_csv[i][0],    joints_limits_csv[i][1], 0, 1)
-		action_vector2[i] = self.Map(pos_sens[i], joints_limits_csv[i][0],    joints_limits_csv[i][1], 0, 1)
-	pos_act=np.around(action_vector2, 5)
-	pos_sens=np.around(action_vector2, 5)
-	joints_val=list(pos_sens)
-	joints_val.append(tocsv)	
-        with open(self.path_csv, "a+b") as f:
-            writer = csv.writer(f)
-            writer.writerows([joints_val])
-        return"""
-
 
     """
         ---------------------MENU CONTORL FUNCTION-------------------------START

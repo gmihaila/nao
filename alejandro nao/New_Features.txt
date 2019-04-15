@@ -1,0 +1,38 @@
+
+CPU
+-head temperature
+Device/SubDeviceList/Head/Temperature/Sensor/Value
+
+Battery
+-Current
+Device/SubDeviceList/Battery/Current/Sensor/Value	
+-Charge
+Device/SubDeviceList/Battery/Charge/Sensor/Value 	
+-Temperature
+Device/SubDeviceList/Battery/Temperature/Sensor/Value
+
+Inertial (torso)
+	Gyroscope
+	-X Sensor
+	Device/SubDeviceList/InertialSensor/GyroscopeX/Sensor/Value
+	-Y Sensor
+	Device/SubDeviceList/InertialSensor/GyroscopeY/Sensor/Value
+	-Z Sensor (not available)
+	Device/SubDeviceList/InertialSensor/GyroscopeZ/Sensor/Value	
+	
+	Angle (Computed with the gyro and accelero data)
+	-X Angle
+	Device/SubDeviceList/InertialSensor/AngleX/Sensor/Value
+	-Y Angle
+	Device/SubDeviceList/InertialSensor/AngleY/Sensor/Value
+	-Z Angle (not available)
+	Device/SubDeviceList/InertialSensor/AngleZ/Sensor/Value
+
+	Accelerometer
+	-X Accelerometer
+	Device/SubDeviceList/InertialSensor/AccelerometerX/Sensor/Value
+	-Y Accelerometer
+	Device/SubDeviceList/InertialSensor/AccelerometerY/Sensor/Value
+	-Z Accelerometer
+	Device/SubDeviceList/InertialSensor/Accelerometerz/Sensor/Value
+
