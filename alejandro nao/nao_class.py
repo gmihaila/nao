@@ -23,6 +23,8 @@ class NaoWrapper(object):
             self.leds =         ALProxy("ALLeds",ip,9559)
             self.memory =       ALProxy("ALMemory", ip, 9559)
             self.camProxy =     ALProxy("ALVideoDevice", ip, 9559)
+	    self.sonarProxy = ALProxy("ALSonar", ip, 9559)
+      	    self.sonarProxy.subscribe("myApplication")
         except Exception,e:
             print "Could not create proxy to ALMotion"
             print "Error was: ",e
@@ -328,7 +330,7 @@ class NaoWrapper(object):
 	body_joints=self.motionProxy.getBodyNames("Body")
 	body_joints= body_joints[0:14]+body_joints[15:]
       	joints_limits_csv = self.motionProxy.getLimits("Body")[0:14]+self.motionProxy.getLimits("Body")[15:]
-	body_info=[[] for i in range(30)]
+	body_info=[[] for i in range(32)]
 	i=0;
 	#JOINTS DATA
 	for body_part in body_joints:
@@ -355,7 +357,17 @@ class NaoWrapper(object):
 		body_info[i].append(self.memory.getData("Device/SubDeviceList/InertialSensor/%sY/Sensor/Value"%inertial[j]))
 		body_info[i].append(self.memory.getData("Device/SubDeviceList/InertialSensor/%sZ/Sensor/Value"%inertial[j]))
 		i+=1	
-	for i in range(0,len(body_info)-5):
+	FSR=["L","R"]
+	for FSR_side in FSR:
+		body_info[i].append(self.memory.getData("Device/SubDeviceList/%sFoot/FSR/FrontLeft/Sensor/Value"%FSR_side))
+		body_info[i].append(self.memory.getData("Device/SubDeviceList/%sFoot/FSR/FrontRight/Sensor/Value"%FSR_side))
+		body_info[i].append(self.memory.getData("Device/SubDeviceList/%sFoot/FSR/RearLeft/Sensor/Value"%FSR_side))
+		body_info[i].append(self.memory.getData("Device/SubDeviceList/%sFoot/FSR/RearRight/Sensor/Value"%FSR_side))
+		body_info[i].append(self.memory.getData("Device/SubDeviceList/%sFoot/FSR/TotalWeight/Sensor/Value"%FSR_side))
+		body_info[i].append(self.memory.getData("Device/SubDeviceList/%sFoot/FSR/CenterOfPressure/X/Sensor/Value"%FSR_side))
+		body_info[i].append(self.memory.getData("Device/SubDeviceList/%sFoot/FSR/CenterOfPressure/Y/Sensor/Value"%FSR_side))
+		i+=1	
+	for i in range(0,len(body_info)-7):
 		for j in range(0,len(body_info[i])-1):
 			body_info[i][j] = self.Map(body_info[i][j], joints_limits_csv[i][0],joints_limits_csv[i][1], 0, 1)
 	body_info[0:25]=np.around(body_info[0:25], 2)
@@ -369,6 +381,22 @@ class NaoWrapper(object):
 	f.close()
         return
 
+    def sonar(self):
+	a=[]
+	b=[]
+	for i in range(9):
+		if(i==0):
+			a.append(self.memory.getData("Device/SubDeviceList/US/Left/Sensor/Value"))
+			b.append(self.memory.getData("Device/SubDeviceList/US/Right/Sensor/Value"))
+		else:
+			a.append(self.memory.getData("Device/SubDeviceList/US/Left/Sensor/Value%s"%i))
+			b.append(self.memory.getData("Device/SubDeviceList/US/Right/Sensor/Value%s"%i))
+	print()	
+	print(a)
+	print(b)
+	print(self.memory.getData("Device/SubDeviceList/US/Actuator/Value"))
+	print(self.memory.getData("Device/SubDeviceList/US/Sensor/Value"))
+	
     """
         ---------------------MENU CONTORL FUNCTION-------------------------START
     """
@@ -486,8 +514,10 @@ class NaoWrapper(object):
             elif str(user_input) == "q":
                 print "\nCommand closed!"
                 break
-
-            else:
+	
+	    elif str(user_input) == "o":
+		self.sonar()
+	    else:
                 try:
                     float(user_input)
                     increment = float(user_input)
