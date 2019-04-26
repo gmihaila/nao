@@ -326,7 +326,6 @@ class NaoWrapper(object):
         ---------------------SNAP DATA FUNCTION-------------------------STARTiNRETIAL_gYROSCOPE
     """
     def ToCsv(self,tocsv):
-        
 	body_joints=self.motionProxy.getBodyNames("Body")
 	body_joints= body_joints[0:14]+body_joints[15:]
       	joints_limits_csv = self.motionProxy.getLimits("Body")[0:14]+self.motionProxy.getLimits("Body")[15:]
@@ -358,36 +357,28 @@ class NaoWrapper(object):
 		body_info[i].append(self.memory.getData("Device/SubDeviceList/InertialSensor/%sZ/Sensor/Value"%inertial[j]))
 		i+=1	
 	#FSR DATA
-	FSR=["L","R"]
-	for FSR_side in FSR:
-		body_info[i].append(self.memory.getData("Device/SubDeviceList/%sFoot/FSR/FrontLeft/Sensor/Value"%FSR_side))
-		body_info[i].append(self.memory.getData("Device/SubDeviceList/%sFoot/FSR/FrontRight/Sensor/Value"%FSR_side))
-		body_info[i].append(self.memory.getData("Device/SubDeviceList/%sFoot/FSR/RearLeft/Sensor/Value"%FSR_side))
-		body_info[i].append(self.memory.getData("Device/SubDeviceList/%sFoot/FSR/RearRight/Sensor/Value"%FSR_side))
-		body_info[i].append(self.memory.getData("Device/SubDeviceList/%sFoot/FSR/TotalWeight/Sensor/Value"%FSR_side))
-		body_info[i].append(self.memory.getData("Device/SubDeviceList/%sFoot/FSR/CenterOfPressure/X/Sensor/Value"%FSR_side))
-		body_info[i].append(self.memory.getData("Device/SubDeviceList/%sFoot/FSR/CenterOfPressure/Y/Sensor/Value"%FSR_side))
-		i+=1
-	#HANDS DATA
-	print(body_info[24][0]-body_info[24][1])
+	#FSR=["L","R"]
+        FSR=["FrontLeft", "FrontRight", "RearLeft", "RearRight", "TotalWeight", "CenterOfPressure/X", "CenterOfPressure/Y"]
+        for FSR_feature in FSR:
+		body_info[i].append(self.memory.getData("Device/SubDeviceList/LFoot/FSR/%s/Sensor/Value"%FSR_feature))
+		body_info[i+1].append(self.memory.getData("Device/SubDeviceList/RFoot/FSR/%s/Sensor/Value"%FSR_feature))
+        i+=2
+        #HANDS DATA
 	if(abs(body_info[24][0]-body_info[24][1])>0.01):
 		body_info[i].append(1)	
 	else:
 		body_info[i].append(0)
 	i+=1
-	print(body_info[7][0]-body_info[7][1])
 	if(abs(body_info[7][0]-body_info[7][1])>0.01):
 		body_info[i].append(1)		
 	else:
 		body_info[i].append(0)
 	i+=1
-
+        #PREPARE DATA FOR CSV
 	for i in range(0,len(body_info)-9):
 		for j in range(0,len(body_info[i])-1):
 			body_info[i][j] = self.Map(body_info[i][j], joints_limits_csv[i][0],joints_limits_csv[i][1], 0, 1)
 	body_info[0:25]=np.around(body_info[0:25], 2)
-	for i in range(0,len(body_info)):
-		print(body_info[i])
 	body_info2=list(body_info)	
 	body_info2.append(tocsv)    
 	with open(self.path_csv, "a+b") as f:
