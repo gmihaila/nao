@@ -8,6 +8,8 @@ import numpy as np
 from PIL import Image
 from naoqi import ALProxy
 # from naoqi import ALBroker
+import scipy.misc
+
 from naoqi import ALModule
 class NaoWrapper(object):
     """
@@ -374,6 +376,10 @@ class NaoWrapper(object):
 	else:
 		body_info[i].append(0)
 	i+=1
+	#SNAP
+	top_image,bottom_image=self.CameraFunction()
+	scipy.misc.imsave("Snaps/%stop.jpg"%tocsv, top_image)
+	scipy.misc.imsave("Snaps/%sbottom.jpg"%tocsv, bottom_image)
         #PREPARE DATA FOR CSV
 	for i in range(0,len(body_info)-9):
 		for j in range(0,len(body_info[i])-1):
@@ -420,7 +426,7 @@ class NaoWrapper(object):
         #initialize message
         joints = ['LShoulderPitch', 'LShoulderRoll', 'LElbowYaw', 'LElbowRoll', 'LWristYaw', 'LHand', 'Hips', 'RShoulderPitch', 'RShoulderRoll', 'RElbowYaw', 'RElbowRoll', 'RWristYaw', 'RHand']
         info = "\n-----> Type r to show current action_vector.\
-        \n-----> Type d[movement or action performed] to dump temp vector to pickle.\
+        \n-----> Type d[movement or action performed] to dump temp vector to pickle and take snap.\
         \n-----> Type a adjust movement. \
         \n-----> Type e execute temp action list. \
         \n-----> Type s save to temp vector. \
