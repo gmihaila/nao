@@ -6,17 +6,30 @@ Nao Robot Python Code
 
 CSV Documentation format
 
-  Data             Row(s)     Format
-  Joints values:    A-Y       [Actuator, Sensor, Electric Cuurent, Temperature. Hardness, Temperature Status, Error(Actuator vs Sensor), Acive Diagnosis, Passive Diagnosis, Temperature Diagnosis]
+  Joints values:    
+    Rows: A-Y       
+    Format: [Actuator, Sensor, Electric Cuurent, Temperature. Hardness, Temperature Status, Error(Actuator vs Sensor), Acive Diagnosis, Passive Diagnosis, Temperature Diagnosis]
   
-  CPU Temp:         Z         [Temperature]
+  CPU Temp:
+    Rows: A-Y       
+    Format: [Temperature]
   
-  Battery:          AA        [Current, Charge, Temperature]
+  Battery: 
+    Rows: AA       
+    Format: [Current, Charge, Temperature]
   
-  Inertial values:  AB-AD     [X value, Y value, Z value]
+  Inertial values:
+    Rows: AB-AD       
+    Format: [X value, Y value, Z value]
   
-  FSR:              AE-AF     [FrontLeft, FrontRight, RearLeft, RearRight, TotalWeight, CenterOfPressure on X, CenterOfPressure on Y]
+  FSR:     
+    Rows: AE-AF       
+    Format: [FrontLeft, FrontRight, RearLeft, RearRight, TotalWeight, CenterOfPressure on X, CenterOfPressure on Y]
   
-  Hand Object:      AG-AH     [Yes/No]
+  Hand Object:
+    Rows: AG-AH       
+    Format: [Yes/No]
   
-  Action:           AI        [Name of the top and bottom .jpg files]
+  Action:  
+    Rows: AI 
+    Format: [Name of the top and bottom .jpg files]
