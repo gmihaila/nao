@@ -33,3 +33,4 @@ CSV Documentation format
   Action:  
       Rows: AI 
      Format: [Name of the top and bottom .jpg files]
+     
