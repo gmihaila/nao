@@ -25,6 +25,7 @@ class NaoWrapper(object):
             self.leds =         ALProxy("ALLeds",ip,9559)
             self.memory =       ALProxy("ALMemory", ip, 9559)
             self.camProxy =     ALProxy("ALVideoDevice", ip, 9559)
+	    self.diagnosisProxy= ALProxy("ALDiagnosis", ip,9559)
 	    self.sonarProxy = ALProxy("ALSonar", ip, 9559)
       	    self.sonarProxy.subscribe("myApplication")
         except Exception,e:
@@ -342,6 +343,9 @@ class NaoWrapper(object):
 		body_info[i].append(self.memory.getData("Device/SubDeviceList/%s/Hardness/Actuator/Value"%body_part))
  		body_info[i].append(self.memory.getData("Device/SubDeviceList/%s/Temperature/Sensor/Status"%body_part))
 		body_info[i].append(body_info[i][0]-body_info[i][1])
+		body_info[i].append(self.memory.getData("Diagnosis/Active/%s/Error"%body_part))
+		body_info[i].append(self.memory.getData("Diagnosis/Passive/%s/Error"%body_part))
+		body_info[i].append(self.memory.getData("Diagnosis/Temperature/%s/Error"%body_part))
 		i+=1
 	#CPU DATA		
 	body_info[i].append(self.memory.getData("Device/SubDeviceList/Head/Temperature/Sensor/Value"))		
@@ -378,13 +382,15 @@ class NaoWrapper(object):
 	i+=1
 	#SNAP
 	top_image,bottom_image=self.CameraFunction()
-	scipy.misc.imsave("Snaps/%stop.jpg"%tocsv, top_image)
-	scipy.misc.imsave("Snaps/%sbottom.jpg"%tocsv, bottom_image)
-        #PREPARE DATA FOR CSV
-	for i in range(0,len(body_info)-9):
+	scipy.misc.imsave("Snaps/%s_top.jpg"%tocsv, top_image)
+	scipy.misc.imsave("Snaps/%s_bottom.jpg"%tocsv, bottom_image)	
+        #MAP VALUES
+	'''for i in range(0,len(body_info)-9):
 		for j in range(0,len(body_info[i])-1):
 			body_info[i][j] = self.Map(body_info[i][j], joints_limits_csv[i][0],joints_limits_csv[i][1], 0, 1)
 	body_info[0:25]=np.around(body_info[0:25], 2)
+	'''
+	#DUMP INTO CSV
 	body_info2=list(body_info)	
 	body_info2.append(tocsv)    
 	with open(self.path_csv, "a+b") as f:

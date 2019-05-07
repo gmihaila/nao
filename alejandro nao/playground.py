@@ -9,7 +9,7 @@ from naoqi import ALModule
 from nao_class import NaoWrapper
 
 
-IP = "10.125.201.137"
+IP = "10.125.160.230"
 data = "nao_data.csv"
 
 # create nao object
