@@ -5,7 +5,7 @@ Nao Robot Python Code
 
 
 
-## CSV Documentation format
+## CSV Format
 ### Joints values:    
 * Rows: A-Y       
 * Format: [Actuator, Sensor, Electric Cuurent, Temperature. Hardness, Temperature Status, Error(Actuator vs Sensor), Active Diagnosis, Passive Diagnosis, Temperature Diagnosis]
