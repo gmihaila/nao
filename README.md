@@ -1,5 +1,10 @@
 # Nao Python Wrapper for Machine Learning Purposes
 
+[![GitHub license](https://img.shields.io/github/license/Naereen/StrapDown.js.svg)](https://github.com/Naereen/StrapDown.js/blob/master/LICENSE)
+[![Ask Me Anything !](https://img.shields.io/badge/Updated-July,2020-1abc9c.svg)](https://GitHub.com/Naereen/ama)
+
+See documentation **[here[(http://doc.aldebaran.com/2-1/dev/naoqi/index.html#naoqi-process)**.
+
 This is a wrapper around the Nao Python Wrapper to encode joint positions into a vector of 0-1 values.
 
 The purpose of this encoding si to make the Nao robot easy to train using Machine Learning algorithms.
@@ -51,4 +56,9 @@ time.sleep(3)
 my_nao.Rest()
 ```
 
+For the Nao robot I had available it only worked with [nao/pynaoqi/pynaoqi-python2.7-2.1.4.13-linux64.tar.gz](https://github.com/gmihaila/nao/blob/master/pynaoqi/pynaoqi-python2.7-2.1.4.13-linux64.tar.gz). To use Naoqi `from naoqi import ALModule`.
+
+I worked on this project with the intent of train Nao robot for object grasping. After some testing I found out that the Nao robot is not apropriate to be used with Machine Learning - it is VERY unprecise! it overheats quickly and it puts a lot of wear and tear when trying to gatter movement data.
+
+Feel free to use the code as you please.
 
